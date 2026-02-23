@@ -1,0 +1,711 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>主動式ETF佈局動向</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z9036RWWN2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    // ⚠️ 這裡也要換成您的 GA4 評估 ID
+    gtag('config', 'G-Z9036RWWN2');
+
+    // ===== 自訂 GA4 事件追蹤函數 =====
+    function trackEvent(eventName, params) {
+      try {
+        if (typeof gtag === "function") {
+          gtag('event', eventName, params);
+        }
+      } catch(e) {
+        // 避免阻礙網頁運行
+      }
+    }
+  </script>
+  <style>
+    :root {
+      /* ===== 配色系統 (深色主題) ===== */
+      --bg-main: #0b1220;       
+      --bg-sidebar: #0f1a2e;    
+      --bg-card: #13223a;       
+      --bg-hover: rgba(255,255,255,0.05);
+      
+      --text-main: #e8eefc;
+      --text-muted: #9fb0d0;
+      
+      --line: rgba(255,255,255,0.1);
+      --accent: #3b82f6;        
+      
+      --buy: #ff6b6b;           
+      --sell: #36d399;          
+      
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: system-ui, "Noto Sans TC", Arial, sans-serif;
+      color: var(--text-main);
+      background: var(--bg-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* ===== Layout: Sidebar ===== */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+      z-index: 100;
+    }
+    
+    .brand {
+      padding: 24px;
+      font-size: 20px;
+      font-weight: 800;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 1px;
+    }
+    
+    .menu {
+      flex: 1;
+      padding: 20px 10px;
+      overflow-y: auto;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      margin-bottom: 6px;
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    
+    .menu-item:hover { background: var(--bg-hover); color: var(--text-main); }
+    .menu-item.active { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+    .menu-item i { width: 24px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 20px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ===== Layout: Main Content ===== */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      background: radial-gradient(circle at top right, #1e3a8a22, transparent 40%);
+    }
+
+    .top-bar {
+      height: 60px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      justify-content: space-between;
+      background: rgba(11, 18, 32, 0.8);
+      backdrop-filter: blur(10px);
+      flex-shrink: 0;
+    }
+
+    .page-title { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+    .update-time { font-size: 13px; color: var(--text-muted); background: var(--bg-hover); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--line); }
+
+    /* ===== Views ===== */
+    .view-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .view-container.active { display: block; opacity: 1; }
+
+    /* ===== Tabs ===== */
+    .filter-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 20px;
+      background: var(--bg-card);
+      padding: 5px;
+      border-radius: var(--radius);
+      width: fit-content;
+      border: 1px solid var(--line);
+    }
+    
+    .filter-tab {
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--text-muted);
+      transition: 0.2s;
+      font-size: 14px;
+    }
+    
+    .filter-tab:hover { color: var(--text-main); background: var(--bg-hover); }
+    
+    .filter-tab[data-type="build"].active, .filter-tab[data-type="add"].active { background: var(--buy); color: #fff; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4); }
+    .filter-tab[data-type="clear"].active, .filter-tab[data-type="reduce"].active { background: var(--sell); color: #fff; box-shadow: 0 2px 8px rgba(54, 211, 153, 0.4); }
+    .filter-tab.sub-tab.active { background: var(--accent); color: white; }
+
+    /* ===== Time Toggles ===== */
+    .time-toggles {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .time-btn {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text-muted);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .time-btn:hover { border-color: var(--text-muted); }
+    .time-btn.active { border-color: var(--accent); color: white; background: var(--accent); }
+    .time-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--line); }
+
+    /* ===== Tables ===== */
+    .table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .table-responsive { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
+    th { 
+      background: rgba(15, 26, 46, 0.95); 
+      color: var(--text-muted); 
+      font-weight: 600; 
+      text-align: left; 
+      padding: 14px 16px; 
+      border-bottom: 1px solid var(--line);
+    }
+    td { padding: 14px 16px; border-bottom: 1px solid var(--line); color: var(--text-main); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-hover); }
+
+    .num { text-align: right; font-family: 'Roboto Mono', monospace; }
+    .code { font-family: 'Roboto Mono', monospace; color: var(--text-muted); }
+    
+    .delta-pos { color: var(--buy); font-weight: 700; }
+    .delta-neg { color: var(--sell); font-weight: 700; }
+
+    /* ===== Search Hero ===== */
+    .search-hero {
+      background: var(--bg-card);
+      padding: 36px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      margin-bottom: 24px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .search-hero h2 { margin: 0 0 10px 0; font-size: 24px; }
+    .search-box-large {
+      display: flex;
+      max-width: 500px;
+      margin: 24px auto 0;
+      gap: 10px;
+    }
+    .search-input {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--line);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: 0.2s;
+    }
+    .search-input:focus { border-color: var(--accent); background: rgba(0,0,0,0.5); }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 15px;
+      transition: 0.2s;
+    }
+    .btn-primary:hover { background: #2563eb; }
+
+    /* ===== Mobile ===== */
+    .mobile-menu-btn { display: none; background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+    
+    @media (max-width: 768px) {
+      .sidebar { position: absolute; height: 100%; transform: translateX(-100%); box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
+      .sidebar.open { transform: translateX(0); }
+      .mobile-menu-btn { display: block; }
+      .view-container { padding: 16px; }
+      .search-hero { padding: 24px 16px; }
+      th, td { padding: 10px 12px; font-size: 13px; }
+      .filter-tabs { width: 100%; overflow-x: auto; }
+      .filter-tab { white-space: nowrap; flex: 1; text-align: center;}
+    }
+
+    .loading-spinner { padding: 60px; text-align: center; color: var(--text-muted); font-size: 16px; }
+    .empty-state { padding: 60px; text-align: center; color: var(--text-muted); }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+  </style>
+</head>
+
+<body>
+
+  <nav class="sidebar" id="sidebar">
+    <div class="brand">
+      <i class="fa-solid fa-chart-line" style="color:var(--buy)"></i>
+      主動式ETF小網
+    </div>
+    <div class="menu">
+      <div class="menu-item active" onclick="switchView('dashboard', this)">
+        <i class="fa-solid fa-layer-group"></i> 市場動向
+      </div>
+      <div class="menu-item" onclick="switchView('target', this)">
+        <i class="fa-solid fa-crosshairs"></i> 標的分析
+      </div>
+      <div class="menu-item" onclick="switchView('holdings', this)">
+        <i class="fa-solid fa-list-ul"></i> 持股明細
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div><i class="fa-solid fa-database"></i> Source: CMoney</div>
+      <div id="lastUpdated" style="margin-top:8px; font-size:11px;">更新中...</div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    
+    <div class="top-bar">
+      <div style="display:flex; align-items:center; gap:15px;">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+        <div class="page-title" id="pageTitle">市場動向</div>
+      </div>
+      <div class="update-time" id="topUpdateTime"><i class="fa-regular fa-clock"></i> --:--</div>
+    </div>
+
+    <div id="view-dashboard" class="view-container active">
+      
+      <div class="filter-tabs">
+        <div class="filter-tab active" data-type="build" onclick="setDashboardTab('build')">建倉</div>
+        <div class="filter-tab" data-type="add" onclick="setDashboardTab('add')">加碼</div>
+        <div class="filter-tab" data-type="clear" onclick="setDashboardTab('clear')">清倉</div>
+        <div class="filter-tab" data-type="reduce" onclick="setDashboardTab('reduce')">減碼</div>
+      </div>
+
+      <div class="time-toggles">
+        <button class="time-btn active" onclick="setTimeRange(1, this)">近 1 日</button>
+        <button class="time-btn" onclick="setTimeRange(5, this)">近 5 日</button>
+        <button class="time-btn" onclick="setTimeRange(10, this)">近 10 日</button>
+        <div style="flex:1"></div>
+        <div style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-circle-info"></i> 顯示最新資料
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-responsive" id="dashboardTableContent">
+          <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> 資料載入中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-target" class="view-container">
+      <div class="search-hero">
+        <h2><i class="fa-solid fa-magnifying-glass-chart"></i> 標的持股分析</h2>
+        <div style="color:var(--text-muted); margin-top:8px;">輸入個股代號，查看主動式 ETF 在各季度或每日的持股變化</div>
+        
+        <div class="search-box-large">
+          <input type="text" class="search-input" id="targetInput" placeholder="例如: 2330, 3231" onkeyup="if(event.key==='Enter') searchTarget()">
+          <button class="btn-primary" onclick="searchTarget()">分析</button>
+        </div>
+
+        <div style="margin-top:20px; display:flex; justify-content:center; gap:10px;">
+           <button class="time-btn active" id="btn-target-quarterly" onclick="switchTargetSubTab('quarterly')">季度持股分析</button>
+           <button class="time-btn" id="btn-target-daily" onclick="switchTargetSubTab('daily')">每日持股分析 (一季內)</button>
+        </div>
+      </div>
+      <div id="targetResultArea"></div>
+    </div>
+
+    <div id="view-holdings" class="view-container">
+      <div class="search-hero">
+        <h2><i class="fa-solid fa-chart-pie"></i> ETF 持股明細</h2>
+        <div style="color:var(--text-muted); margin-top:8px;">輸入 ETF 代號，查看完整持股權重與單日變化</div>
+        <div class="search-box-large">
+          <input type="text" class="search-input" id="etfInput" placeholder="例如: 00984A" onkeyup="if(event.key==='Enter') searchEtf()">
+          <button class="btn-primary" onclick="searchEtf()">查詢</button>
+        </div>
+      </div>
+      <div id="etfResultArea"></div>
+    </div>
+  </main>
+
+  <div id="overlay" onclick="toggleSidebar()" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:90; display:none;"></div>
+
+<script>
+  // ==========================================
+  // 【重要設定】：請替換為您的 Google Apps Script 部署網址
+  // ==========================================
+  const API_URL = "https://script.google.com/macros/s/AKfycbz2IqCr1KFJAgLhfyNhf8PmjoClyjbdWnstGPEFD-R0NwezAj-wI1rmFmRr4B7sG_IGlg/exec"; 
+
+  // ===== 1. 全域狀態 =====
+  const state = {
+    raw: null,          
+    currentView: 'dashboard',
+    dashTab: 'build',   // build, add, clear, reduce
+    dashTime: 1,        // 1, 5, 10
+    targetSubTab: 'quarterly'
+  };
+
+  // ===== 2. 欄位設定 =====
+  const CONFIG = {
+    build: {
+      cols: [
+        { key: "標的代號", label: "代號", cls: "code" },
+        { key: "標的名稱", label: "名稱", cls: "" },
+        { key: "持股變化(張)", label: "持股變化", cls: "num", isDelta: true },
+        { key: "建倉ETF代號", label: "建倉 ETF", cls: "code" },
+        { key: "佔當日成交量比重(%)", label: "成交比重(%)", cls: "num" }
+      ],
+      emptyMsg: "無建倉資料"
+    },
+    add: {
+      cols: [
+        { key: "標的代號", label: "代號", cls: "code" },
+        { key: "標的名稱", label: "名稱", cls: "" },
+        { key: "持股變化(張)", label: "持股變化", cls: "num", isDelta: true },
+        { key: "持股(張)", label: "持股總數", cls: "num" }, 
+        { key: "加碼ETF代號", label: "加碼 ETF", cls: "code" },
+        { key: "佔當日成交量比重(%)", label: "成交比重(%)", cls: "num" }
+      ],
+      emptyMsg: "無加碼資料"
+    },
+    clear: {
+      cols: [
+        { key: "標的代號", label: "代號", cls: "code" },
+        { key: "標的名稱", label: "名稱", cls: "" },
+        { key: "持股變化(張)", label: "持股變化", cls: "num", isDelta: true },
+        { key: "清倉ETF代號", label: "清倉 ETF", cls: "code" },
+        { key: "佔當日成交量比重(%)", label: "成交比重(%)", cls: "num" }
+      ],
+      emptyMsg: "無清倉資料"
+    },
+    reduce: {
+      cols: [
+        { key: "標的代號", label: "代號", cls: "code" },
+        { key: "標的名稱", label: "名稱", cls: "" },
+        { key: "持股變化(張)", label: "持股變化", cls: "num", isDelta: true },
+        { key: "持股(張)", label: "持股總數", cls: "num" }, 
+        { key: "減碼ETF代號", label: "減碼 ETF", cls: "code" },
+        { key: "佔當日成交量比重(%)", label: "成交比重(%)", cls: "num" }
+      ],
+      emptyMsg: "無減碼資料"
+    }
+  };
+
+  // ===== 3. 初始化 (改用 Fetch 呼叫 API) =====
+  window.onload = function() {
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.ok) {
+           document.getElementById('dashboardTableContent').innerHTML = `<div class="empty-state">${data.error}</div>`;
+           return;
+        }
+        state.raw = data;
+        const timeStr = new Date(data.updatedAt).toLocaleString("zh-TW", {hour12: false, month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+        document.getElementById('lastUpdated').innerText = "Updated: " + timeStr;
+        document.getElementById('topUpdateTime').innerHTML = `<i class="fa-regular fa-clock"></i> ${timeStr}`;
+        renderDashboardTable();
+        
+        // 頁面初次載入 GA 追蹤
+        trackEvent('page_view', { page_title: '主動式ETF佈局動向' });
+      })
+      .catch(err => {
+        document.getElementById('dashboardTableContent').innerHTML = `<div class="empty-state" style="color:var(--sell)">連線錯誤: ${err.message}<br><small>請確認 API URL 是否正確填寫且允許任何人存取。</small></div>`;
+      });
+  };
+
+  // ===== 4. 視圖切換 =====
+  function switchView(viewName, menuEl) {
+    state.currentView = viewName;
+    if(menuEl) {
+        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        menuEl.classList.add('active');
+    }
+    document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-' + viewName).classList.add('active');
+    const titles = { dashboard: '市場動向', target: '標的分析', holdings: '持股明細' };
+    document.getElementById('pageTitle').innerText = titles[viewName];
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('open')) { toggleSidebar(); }
+
+    // ✅ 送出 GA 事件：主選單切換
+    trackEvent('view_change', { view_name: titles[viewName] });
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    sidebar.classList.toggle('open');
+    overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+  }
+
+  // ===== 5. Dashboard 邏輯 =====
+  function setDashboardTab(tabName) {
+    state.dashTab = tabName;
+    document.querySelectorAll('.filter-tabs .filter-tab').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.filter-tab[data-type="${tabName}"]`).classList.add('active');
+    renderDashboardTable();
+
+    // ✅ 送出 GA 事件：點擊 建倉/加碼/清倉/減碼
+    trackEvent('tab_click', { action_type: tabName });
+  }
+
+  function setTimeRange(days, btn) {
+    state.dashTime = days;
+    document.querySelectorAll('.time-toggles .time-btn').forEach(el => el.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    renderDashboardTable();
+
+    // ✅ 送出 GA 事件：點擊 時間維度 (1/5/10日)
+    trackEvent('time_range_click', { days_selected: days });
+  }
+
+  function renderDashboardTable() {
+    const container = document.getElementById('dashboardTableContent');
+    if (!state.raw) return;
+
+    // 根據目前的 Tab (建/加/清/減) 和 Time (1/5/10) 決定讀取哪個資料
+    let dataKey = state.dashTab;
+    if (state.dashTime === 5) dataKey += "_5d";
+    if (state.dashTime === 10) dataKey += "_10d";
+
+    const rows = state.raw[dataKey] || [];
+    const cfg = CONFIG[state.dashTab];
+
+    if (rows.length === 0) {
+      container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><br>${cfg.emptyMsg} (${state.dashTime}日)</div>`;
+      return;
+    }
+
+    let ths = cfg.cols.map(c => `<th class="${c.cls.includes('num')?'num':''}">${c.label}</th>`).join("");
+    
+    let trs = rows.map(r => {
+      let tds = cfg.cols.map(c => {
+        let val = r[c.key] ?? "";
+        let displayVal = val;
+        let finalCls = c.cls;
+
+        if (c.isDelta) {
+          const num = parseInt(val, 10);
+          if (state.dashTab === 'clear' || state.dashTab === 'reduce') {
+            finalCls += " delta-neg"; 
+            if (num !== 0) {
+              displayVal = "-" + Number(Math.abs(num)).toLocaleString();
+            } else {
+              displayVal = "0";
+            }
+          } else {
+            if (num > 0) {
+              finalCls += " delta-pos";
+              displayVal = "+" + Number(num).toLocaleString();
+            } else if (num < 0) {
+              finalCls += " delta-neg";
+              displayVal = Number(num).toLocaleString();
+            } else {
+              displayVal = "-";
+            }
+          }
+        } else if (c.cls.includes('num')) {
+           if (!isNaN(val) && val !== "") displayVal = Number(val).toLocaleString();
+        }
+
+        return `<td class="${finalCls}">${displayVal}</td>`;
+      }).join("");
+      return `<tr>${tds}</tr>`;
+    }).join("");
+
+    container.innerHTML = `
+      <table>
+        <thead><tr>${ths}</tr></thead>
+        <tbody>${trs}</tbody>
+      </table>
+    `;
+  }
+
+  // ===== 6. 標的分析 (Target) 改用 Fetch =====
+  function switchTargetSubTab(subTab) {
+    state.targetSubTab = subTab;
+    document.getElementById('btn-target-quarterly').classList.toggle('active', subTab === 'quarterly');
+    document.getElementById('btn-target-daily').classList.toggle('active', subTab === 'daily');
+    const inputVal = document.getElementById('targetInput').value.trim();
+    
+    // ✅ 送出 GA 事件：標的分析內切換 季度/每日
+    trackEvent('sub_tab_click', { sub_tab_name: subTab });
+
+    if(inputVal) { searchTarget(); } 
+    else { document.getElementById('targetResultArea').innerHTML = ''; }
+  }
+
+  function searchTarget() {
+    const code = document.getElementById('targetInput').value.trim();
+    if (!code) { alert("請輸入代號"); return; }
+
+    // ✅ 送出 GA 事件：搜尋了哪一檔股票
+    trackEvent('search', { search_type: 'target_stock', keyword: code, sub_tab: state.targetSubTab });
+
+    const area = document.getElementById('targetResultArea');
+    area.innerHTML = '<div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> 資料分析中...</div>';
+    
+    // 組合 API 請求參數
+    const op = state.targetSubTab === 'daily' ? 'searchDaily' : 'searchQuarterly';
+    const url = `${API_URL}?op=${op}&code=${code}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(response => {
+        renderPivotTable(response);
+      })
+      .catch(err => {
+        area.innerHTML = `<div class="empty-state" style="color:var(--sell)">錯誤: ${err.message}</div>`;
+      });
+  }
+
+  function renderPivotTable(response) {
+    const area = document.getElementById('targetResultArea');
+    if (!response.ok) { area.innerHTML = `<div class="empty-state"><i class="fa-regular fa-circle-xmark"></i><br>${response.error}</div>`; return; }
+    
+    const cols = response.quarters || response.dates; 
+    const isDaily = !!response.dates;
+    const { targetName, rows } = response;
+
+    if (!rows || rows.length === 0) {
+      area.innerHTML = '<div class="empty-state"><i class="fa-solid fa-folder-open"></i><br>無資料或無任何主動式 ETF 持有此標的。</div>';
+      return;
+    }
+
+    let ths = `<th>主動式 ETF \\ ${isDaily ? '日期' : '季度'}</th>` + cols.map(c => `<th class="num">${c}</th>`).join("");
+    
+    let trs = rows.map(r => {
+      let tds = cols.map(c => {
+        const val = isDaily ? r.dates[c] : r.quarters[c];
+        if (!val) return `<td class="num" style="color:#444;">-</td>`;
+        
+        const hold = Number(val.hold).toLocaleString();
+        const chg = parseInt(val.change || 0, 10);
+        let chgSpan = "";
+        if (chg > 0) chgSpan = `<div style="font-size:11px; color:var(--buy)">+${chg.toLocaleString()}</div>`;
+        else if (chg < 0) chgSpan = `<div style="font-size:11px; color:var(--sell)">${chg.toLocaleString()}</div>`;
+        else chgSpan = `<div style="font-size:11px; color:#666;">-</div>`;
+        
+        return `<td class="num"><div style="font-weight:700;">${hold}</div>${chgSpan}</td>`;
+      }).join("");
+
+      return `<tr><td><div style="font-weight:bold; color:var(--accent); font-family:'Roboto Mono'">${r.etfCode}</div><div style="font-size:12px; color:var(--text-muted);">${r.etfName}</div></td>${tds}</tr>`;
+    }).join("");
+
+    area.innerHTML = `
+      <div class="table-card">
+        <div style="padding:15px 20px; border-bottom:1px solid var(--line); font-weight:bold; background:rgba(0,0,0,0.2);">
+          ${targetName} <span style="color:var(--text-muted); font-weight:normal; font-size:13px; margin-left:10px;">${isDaily?'(每日持股)':'(季度持股)'}</span>
+        </div>
+        <div class="table-responsive"><table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>
+      </div>
+    `;
+  }
+
+  // ===== 7. 持股明細 (改用 Fetch) =====
+  function searchEtf() {
+    const code = document.getElementById('etfInput').value.trim();
+    if (!code) { alert("請輸入代號"); return; }
+
+    // ✅ 送出 GA 事件：搜尋了哪一檔 ETF
+    trackEvent('search', { search_type: 'etf_holdings', keyword: code });
+
+    const area = document.getElementById('etfResultArea');
+    area.innerHTML = '<div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> 查詢中...</div>';
+
+    const url = `${API_URL}?op=searchHoldings&code=${code}`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(response => {
+        renderEtfTable(response);
+      })
+      .catch(err => {
+        area.innerHTML = `<div class="empty-state" style="color:var(--sell)">錯誤: ${err.message}</div>`;
+      });
+  }
+
+  function renderEtfTable(response) {
+    const area = document.getElementById('etfResultArea');
+    if (!response.ok) { area.innerHTML = `<div class="empty-state">${response.error}</div>`; return; }
+    const data = response.data;
+    if (data.length === 0) { area.innerHTML = '<div class="empty-state"><i class="fa-solid fa-folder-open"></i><br>查無資料</div>'; return; }
+
+    let rowsHtml = data.map(row => {
+      const change = parseInt(row['持股變化(張)']||0, 10);
+      let chgClass = "num"; 
+      let chgTxt = change;
+      if (change > 0) { chgClass += " delta-pos"; chgTxt = "+" + Number(change).toLocaleString(); }
+      else if (change < 0) { chgClass += " delta-neg"; chgTxt = Number(change).toLocaleString(); }
+      else { chgTxt = "-"; }
+
+      return `<tr><td class="code">${row['標的代號']}</td><td>${row['標的名稱']}</td><td class="num">${Number(row['持股(張)']).toLocaleString()}</td><td class="${chgClass}">${chgTxt}</td><td class="num">${row['權重(%)']}%</td></tr>`;
+    }).join("");
+
+    area.innerHTML = `
+      <div class="table-card">
+        <div style="padding:15px 20px; border-bottom:1px solid var(--line); font-weight:bold; background:rgba(0,0,0,0.2);">
+          ${data[0]['股票名稱']} (${data[0]['股票代號']}) - 持股明細
+        </div>
+        <div class="table-responsive"><table><thead><tr><th>代號</th><th>名稱</th><th class="num">持股(張)</th><th class="num">變化</th><th class="num">權重</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>
